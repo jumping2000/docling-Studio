@@ -72,8 +72,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 COPY document-parser/requirements-local.txt .
-RUN pip install --no-cache-dir torch torchvision --index-url https://download.pytorch.org/whl/cpu \
-    && pip install --no-cache-dir -r requirements-local.txt
+# Prefer CPU wheel index for PyTorch and avoid installing transitive CUDA/NVIDIA
+# packages by installing PyTorch and docling without their deps. Base stage
+# already installed common requirements from document-parser/requirements.txt.
+ENV PIP_EXTRA_INDEX_URL=https://download.pytorch.org/whl/cpu
+RUN pip install --no-cache-dir --no-deps torch torchvision \
+    && pip install --no-cache-dir --no-deps -r requirements-local.txt
 
 RUN chown -R appuser:appuser /app \
     && chown -R appuser:appuser /usr/local/lib/python3.12/site-packages/rapidocr/models
